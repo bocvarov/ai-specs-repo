@@ -1,0 +1,231 @@
+---
+---
+---
+# Master Specifications
+
+## Vision Statement
+Vytvořit kolaborativní markdown editor integrovaný s GitHubem, který umožňuje týmům diskutovat, komentovat a řídit AI agenty přímo v kontextu dokumentace. Spojení lidské kolaborace s AI asistencí v jednom bezproblémovém workflow.
+
+## Target Audience
+**Primární**: Týmy pracující na AI projektech a tech specifikacích (product manažeři, tech leads, AI architekti)
+- Potřebují iterativně vyvíjet specifikace v markdown
+- Často pracují s GitHubem jako zdrojem pravdy
+- Chtějí kombinovat lidskou expertizu s AI asistencí
+- Potřebují asynchronní kolaboraci s možností sdílení odkazů
+
+## Core Problem
+Aktuálně týmy nemohou efektivně:
+1. Diskutovat inline o obsahu markdown bez vytváření commitů/PR
+2. Přidávat kontextové poznámky, které by AI agenti mohli interpretovat jako instrukce k úpravám
+3. Kolaborativně editovat v reálném čase s jednoduchým sdílením odkazem (jako v Google Docs)
+4. Udržovat "živou" dokumentaci, kde jsou diskuse a AI instrukce součástí dokumentu, ale neviditelné v finálním výstupu
+
+## User Personas
+
+### Persona 1: Jana - Product Manager
+- **Role**: Definuje specifikace pro AI projekty
+- **Pain points**: 
+  - Musí posílat dokumenty přes Slack/Google Docs a pak ručně přenášet do GitHub
+  - Ztrácí kontext diskuse při převodu do markdown
+  - Nemůže snadno požádat AI o úpravy na základě komentářů týmu
+- **Goals**: Rychle iterovat specifikace s týmem a nechat AI provést úpravy podle dohodnutých poznámek
+
+### Persona 2: Martin - Tech Lead
+- **Role**: Reviduje technické specifikace
+- **Pain points**:
+  - GitHub PR workflow je příliš těžkopádný pro rychlé iterace textu
+  - Chce označit konkrétní sekce k úpravě s instrukcemi pro AI
+  - Potřebuje vidět historii změn a kdo co navrhl
+- **Goals**: Efektivně revidovat dokumentaci a delegovat úpravy AI agentovi s jasnými instrukcemi
+
+## Core Loops
+
+### Loop 1: Kolaborativní editace
+1. Uživatel vytvoří/vyber markdown soubor z GitHub repozitáře
+2. Vygeneruje se sdílený odkaz pro tým
+3. Tým edituje text v reálném čase (multi-cursor)
+4. Diskutuje přes inline komentáře (analogie Google Docs)
+5. Komentáře se ukládají jako "speciální" metadata v markdown (např. HTML komentáře nebo YAML front matter)
+
+### Loop 2: AI asistence
+1. Uživatel přidá komentář s instrukcí pro AI označenou pomocí `@agent` (např. "@agent: Uprav tento bod a zjednoduš technický jazyk")
+2. Systém detekuje přítomnost `@agent` v komentářích
+3. Uživatel klikne na tlačítko "Uložit a spustit agenta"
+4. Agent čte markdown + komentáře jako kontext
+5. Agent provede úpravy v souladu s instrukcemi označenými `@agent`
+6. Výsledek se zobrazí k revizi před commitem do GitHub
+
+### Loop 3: GitHub Sync
+1. Uživatel dokončí úpravy a komentáře
+2. Systém vyčistí "speciální" komentáře (nebo je převede na standardní metadata)
+3. Commit do GitHub s jasným diff
+4. Možnost konverzace komentářů na GitHub PR komentáře
+
+## AI Agent Mechanismus
+
+### Trigger podmínky
+- Přítomnost `@agent` v textu komentáře (case-insensitive)
+- Explicitní potvrzení uživatele tlačítkem "Uložit a spustit agenta"
+- Kontrola: Pokud není nalezen `@agent`, soubor se pouze uloží bez spuštění AI
+
+### Chování agenta
+- Analyzuje pouze komentáře obsahující `@agent`
+- Zachovává ostatní komentáře jako diskusní vlákna
+- Ignoruje komentáře bez `@agent` při rozhodování o úpravách
+
+## Out of Scope
+- **WYSIWYG editor**: Pouze čistý markdown textový editor (ne rich text)
+- **Vlastní hosting dokumentů**: Vždy integrace s existujícím GitHub repozitářem
+- **Real-time video/voice chat**: Zaměřeno na asynchronní textovou kolaboraci
+- **AI generování obsahu od nuly**: AI pouze upravuje existující obsah na základě instrukcí, negeneruje celé dokumenty bez kontextu
+- **Správa GitHub PR/Merge**: Tool je pro editaci, nikoliv pro code review workflow (ale může vytvářet PR)
+- **Podpora jiných formátů než markdown**: Pouze .md soubory
+
+## Business Strategy (Internal MVP)
+
+### Business Model
+**Interní cost-center s ROI měřením**:
+- **Vstupní investice**: Vývojový čas (odhad 3-4 týdny pro 1 vývojáře) + náklady na AI API (OpenRouter)
+- **Provozní náklady**: GitHub API limity, hosting (Vercel pro frontend + backend), LLM tokeny
+- **ROI výpočet**: Úspora 5-10 hodin/týdně na osobu × 5 lidí = 25-50 hodin/týdně týmové kapacity
+- **Bod zlomu**: Tool se zaplatí po 4-6 týdcích používání (při hodinové sazbě 50-100 EUR)
+
+### Pricing Strategy
+**Interní budget alokace**:
+- **Měsíční limit pro AI API**: 100-200 EUR přes OpenRouter (flexibilita modelů, lepší pricing)
+- **Hosting**: 20-50 EUR/měsíc (Vercel Pro + Neon Postgres)
+- **Celkový měsíční TCO**: <300 EUR pro tým 5 lidí
+- **Kontrola**: Alert při překročení 80% API limitu, hard stop při 150% (ochrana před runaway costs)
+
+### Go-to-Market Strategy
+**Interní rollout (5 osob)**:
+
+**Fáze 1: Pilot (Týden 1-2)**
+- 2 early adopters (1 PM + 1 Tech Lead)
+- Testování na 3 reálných zadáních
+- Zjištění friction points a stability
+
+**Fáze 2: Týmová adopce (Týden 3-4)**
+- Onboarding všech 5 členů (30min session)
+- Povinné použití pro všechna nová AI zadání
+- Slack kanál #ai-editor-feedback pro bugy/nápady
+
+**Fáze 3: Procesní integrace (Týden 5-8)**
+- Zápis do interní wiki jako standardní tool
+- Review: Co se zlepšilo v kvalitě zadání?
+- Rozhodnutí: Investovat do dalšího vývoje nebo pivot?
+
+**Adopční kritérium**: 80% nových AI zadání vznikne v toolu do konce měsíce 2
+
+### Success Metrics
+
+**Kvantitativní (měřitelné)**:
+1. **Time-to-task**: Čas od nápadu po finální zadání pro AI (baseline: 2-3 hodiny → cíl: <45 minut)
+2. **Iteration count**: Počet AI iterací pro dosažení akceptovatelného výstupu (baseline: 4-6 → cíl: 2-3)
+3. **Adoption rate**: % zadání vytvořených v toolu vs. externě (cíl: >80% do M2)
+4. **API costs**: Cena za zpracování jednoho zadání (cíl: <2 EUR)
+5. **Context switches**: Počet překopírování mezi Docs/GitHub (cíl: 0 pro standardní workflow)
+
+**Kvalitativní (survey 1-10)**:
+1. **Mental alignment**: "Vím, co kolegové připravují za AI zadání" (cíl: >7/10)
+2. **Prompt confidence**: "Cítím se jistější v kvalitě zadání pro AI" (cíl: >8/10)
+3. **Collaboration ease**: "Jednoduchost společného editování" (cíl: >8/10)
+
+**Health metrics** (technické):
+- Uptime: >99% (tool nesmí blokovat kritické zadání)
+- Latence AI odpovědi: <30 sekund
+- GitHub sync error rate: <2%
+
+### Competitive Analysis
+**Alternativy, které tým používá teď**:
+
+1. **Google Docs + copy-paste do GitHub**
+   - Výhody: Známý interface, real-time kolaborace
+   - Nevýhody: Ztráta formátování, duplicitní práce, žádná AI integrace v kontextu
+   - Růžová hrozba: Nízká, ale komfortní zóna
+
+2. **GitHub přímo (PR workflow)**
+   - Výhody: Single source of truth, verzování
+   - Nevýhody: Těžkopádné pro rychlé iterace, špatná inline diskuse, UX bolest pro ne-vývojáře
+   - Hrozba: Status quo bias
+
+3. **Notion + AI**
+   - Výhody: Pěkný editor, AI funkce vestavěné
+   - Nevýhody: Lock-in, špatná GitHub integrace, AI mimo kontext kódu/zadání
+   - Hrozba: Mohli bychom zkusit Notion API místo vlastního řešení
+
+4. **Cursor/VS Code s AI**
+   - Výhody: Přímá integrace s vývojem
+   - Nevýhody: Není pro kolaborativní přípravu zadání, zaměřeno na kód než na specifikace
+   - Hrozba: Pro tech leads možná stačí
+
+**Unikátní value proposition**: Spojení "Google Docs-like kolaborace" + "GitHub jako pravda" + "AI v kontextu zadání" v jednom. Žádný z výše uvedených toto nedělá.
+
+### Risk Assessment
+
+**Technické rizika**:
+1. **GitHub API rate limiting** (Pravděpodobnost: Střední | Dopad: Vysoký)
+   - Mitigace: Agresivní caching, lazy loading, retry logic s exponenciálním backoffem
+   - Fallback: Možnost práce offline s pozdějším syncem
+
+2. **AI reliability** (Pravděpodobnost: Vysoká | Dopad: Střední)
+   - LLM může špatně interpretovat `@agent` instrukce, produkovat nekonzistentní výstupy
+   - Mitigace: Strict prompt templating, versioning prompts, možnost preview před apply
+
+3. **Real-time sync konflikty** (Pravvěpodobnost: Střední | Dopad: Střední)
+   - 5 lidí edituje současně → merge konflikty
+   - Mitigace: Operational transformation nebo CRDT algoritmus, explicitní locking pro kritické sekce
+
+**Adopční rizika**:
+4. **Změna návyků** (Pravděpodobnost: Vysoká | Dopad: Vysoký)
+   - Tým raději zůstane u Google Docs "z pohodlnosti"
+   - Mitigace: Mandátní použití pro nové projekty, champion uživatel (evangelista), celebrate wins ve Slacku
+
+5. **Kvalita zadání se nezlepší** (Pravděpodobnost: Střední | Dopad: Vysoký)
+   - Tool funguje, ale AI stále produkuje špatné výstupy → frustrace
+   - Mitigace: Prompt engineering guidelines přímo v UI, templáty kvalitních zadání, peer review proces
+
+**Organizační rizika**:
+6. **Key person dependency** (Pravděpodobnost: Střední | Dopad: Vysoký)
+   - Jeden vývojář udělá MVP, pak přejde na jiný projekt → tool zahnívá
+   - Mitigace: Dokumentace pro "bus factor", kod review standardy, jednoduchost architektury (nezávislost na exotických tech)
+
+7. **Scope creep** (Pravděpodobnost: Vysoká | Dopad: Střední)
+   - "Když už máme editor, chtěli bychom WYSIWYG, pak rich text, pak tabulky..."
+   - Mitigace: Strict "Out of Scope" sekce v specifikaci, 3-4 týdenní sprinty, explicitní "ne" s vysvětlením
+
+**Mitigace na úrovni týmu**:
+- **Měsíční retro**: Funguje to? Stojí to za provozní náklady?
+- **Kill switch**: Pokud adoption <50% po 2 měsících → sunset a návrat k původnímu procesu
+- **Champion program**: Jeden člověk zodpovědný za product owner roli (sledování metrik, sbírání feedbacku)
+
+---
+
+## Technical Architecture
+
+### High-Level Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              BROWSER (React SPA)                             │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
+│  │   Editor    │  │   Yjs CRDT  │  │  WebSocket  │  │   React Query       │ │
+│  │  (CodeMirror│──│   (Y.Doc)   │──│   Client    │──│   (Server State)    │ │
+│  │   6 + y-cm) │  │             │  │  (PartyKit) │  │                     │ │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────────────┘ │
+│         │                │                │                  │              │
+│         └────────────────┴────────────────┘                  │              │
+│                            │                                 │              │
+│                     Real-time Collaboration                  │              │
+│                            │                                 │              │
+└────────────────────────────┼─────────────────────────────────┼──────────────┘
+                             │                                 │
+                             ▼                                 ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              EDGE / SERVER                                   │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────────────┐  │
+│  │   PartyKit      │  │   Vercel        │  │   Inngest /                 │  │
+│  │   (WebSocket    │  │   Serverless    │  │   Background Jobs           │  │
+│  │    + CRDT sync) │  │   Functions     │  │   (AI processing queue)     │  │
+│  │                 │  │   (tRPC API)    │  │                             │  │
+│  └────────────────
